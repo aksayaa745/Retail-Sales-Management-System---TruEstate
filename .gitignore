@@ -1,0 +1,15 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+
+# Editor
+.vscode/
+
+# Environment files
+.env
+
+# Dataset - keep only local, not in git
+backend/data/
+*.csv
