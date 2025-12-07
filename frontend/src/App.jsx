@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import "./App.css";
 
-const API_BASE_URL = "http://localhost:4000";
+// anywhere you call fetch
+const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const res = await fetch(`${API}/api/sales?page=1&pageSize=10&sortBy=customerName&sortOrder=asc`);
 
 function App() {
   // Data + paging
