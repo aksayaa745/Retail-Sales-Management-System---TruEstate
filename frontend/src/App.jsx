@@ -21,14 +21,14 @@ function App() {
   const [sortBy, setSortBy] = useState("customerName");
   const [sortOrder, setSortOrder] = useState("asc");
 
-  // Filters
+  // Filters - now initialized as arrays for multi-select
   const [regions, setRegions] = useState([]);
   const [genders, setGenders] = useState([]);
-  const [ageRange, setAgeRange] = useState(""); // e.g. "18-25"
-  const [categoryText, setCategoryText] = useState("");
+  const [ageRange, setAgeRange] = useState("");
+  const [categories, setCategories] = useState([]); // Renamed from categoryText for consistency
   const [tags, setTags] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
-  const [dateRange, setDateRange] = useState(""); // e.g. "2023-10"
+  const [dateRange, setDateRange] = useState("");
 
   // header controls
   const [reloadCounter, setReloadCounter] = useState(0);
@@ -57,11 +57,19 @@ function App() {
   const paymentRef = useRef(null);
   const dateRef = useRef(null);
 
-  const handleSingleSelect = (value, setter) => {
-    if (!value) setter([]);
-    else setter([value]);
+  // Updated: Multi-select Handler
+  const handleMultiSelect = (value, currentList, setter) => {
+    if (currentList.includes(value)) {
+      // Remove
+      setter(currentList.filter((item) => item !== value));
+    } else {
+      // Add
+      setter([...currentList, value]);
+    }
     setPage(1);
   };
+
+  const isSelected = (value, list) => list.includes(value);
 
   function updateSortFromValue(value) {
     setSortValue(value);
@@ -100,10 +108,13 @@ function App() {
           params.set("sortBy", sortBy);
           params.set("sortOrder", sortOrder);
         }
+
+        // Multi-select params: append same key multiple times or comma separate
+        // Backend handles comma separated strings now to be robust
         if (regions.length > 0) params.set("regions", regions.join(","));
         if (genders.length > 0) params.set("genders", genders.join(","));
         if (ageRange) params.set("ageRange", ageRange);
-        if (categoryText.trim() !== "") params.set("categories", categoryText.trim());
+        if (categories.length > 0) params.set("categories", categories.join(","));
         if (tags.length > 0) params.set("tags", tags.join(","));
         if (paymentMethods.length > 0) params.set("paymentMethods", paymentMethods.join(","));
         if (dateRange) params.set("dateRange", dateRange);
@@ -141,7 +152,7 @@ function App() {
     regions,
     genders,
     ageRange,
-    categoryText,
+    categories,
     tags,
     paymentMethods,
     dateRange,
@@ -328,9 +339,17 @@ function App() {
 
         {/* MAIN */}
         <div className="main-area">
-          {/* Title */}
-          <div className="title-row">
+          {/* Title Row with Search */}
+          <div className="title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h1>Sales Management System</h1>
+            <input
+              className="search-pill"
+              type="text"
+              placeholder="Name, Phone no."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+            />
           </div>
 
           {/* Controls panel */}
@@ -338,8 +357,20 @@ function App() {
             <div className="controls-left">
               <button
                 className="refresh-pill"
-                onClick={() => setReloadCounter((c) => c + 1)}
-                title="Refresh"
+                onClick={() => {
+                  // Reset all filters
+                  setRegions([]);
+                  setGenders([]);
+                  setAgeRange("");
+                  setCategories([]);
+                  setTags([]);
+                  setPaymentMethods([]);
+                  setDateRange("");
+                  setSearch("");
+                  setPage(1);
+                  setReloadCounter((c) => c + 1); // Trigger re-fetch
+                }}
+                title="Refresh and Reset Filters"
               >
                 <svg
                   width="16"
@@ -375,7 +406,7 @@ function App() {
                       setRegionOpen((s) => !s);
                     }}
                   >
-                    Customer Region <span className="chev">▾</span>
+                    Customer Region ({regions.length ? regions.length : "All"}) <span className="chev">▾</span>
                   </button>
                   {regionOpen && (
                     <div className="simple-pop">
@@ -383,48 +414,20 @@ function App() {
                         onClick={() => {
                           setRegions([]);
                           setPage(1);
-                          setRegionOpen(false);
                         }}
-                        className="pop-item"
+                        className={`pop-item ${regions.length === 0 ? "active" : ""}`}
                       >
                         All
                       </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("North", setRegions);
-                          setRegionOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        North
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("South", setRegions);
-                          setRegionOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        South
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("East", setRegions);
-                          setRegionOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        East
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("West", setRegions);
-                          setRegionOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        West
-                      </button>
+                      {["North", "South", "East", "West"].map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => handleMultiSelect(r, regions, setRegions)}
+                          className={`pop-item ${isSelected(r, regions) ? "active" : ""}`}
+                        >
+                          {isSelected(r, regions) ? "✓ " : ""}{r}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -438,7 +441,7 @@ function App() {
                       setGenderOpen((s) => !s);
                     }}
                   >
-                    Gender <span className="chev">▾</span>
+                    Gender ({genders.length ? genders.length : "All"}) <span className="chev">▾</span>
                   </button>
                   {genderOpen && (
                     <div className="simple-pop">
@@ -446,44 +449,25 @@ function App() {
                         onClick={() => {
                           setGenders([]);
                           setPage(1);
-                          setGenderOpen(false);
                         }}
-                        className="pop-item"
+                        className={`pop-item ${genders.length === 0 ? "active" : ""}`}
                       >
                         All
                       </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("Male", setGenders);
-                          setGenderOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        Male
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("Female", setGenders);
-                          setGenderOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        Female
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("Other", setGenders);
-                          setGenderOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        Other
-                      </button>
+                      {["Male", "Female", "Other"].map((g) => (
+                        <button
+                          key={g}
+                          onClick={() => handleMultiSelect(g, genders, setGenders)}
+                          className={`pop-item ${isSelected(g, genders) ? "active" : ""}`}
+                        >
+                          {isSelected(g, genders) ? "✓ " : ""}{g}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                {/* Age Range */}
+                {/* Age Range - Keeping Single Select as per requirements usually, but let's leave it as is for simplicity unless asked */}
                 <div className="filter-pill" ref={ageRef}>
                   <button
                     className="pill-btn"
@@ -492,7 +476,7 @@ function App() {
                       setAgeOpen((s) => !s);
                     }}
                   >
-                    Age Range <span className="chev">▾</span>
+                    Age Range {ageRange ? `(${ageRange})` : ""} <span className="chev">▾</span>
                   </button>
                   {ageOpen && (
                     <div className="simple-pop">
@@ -549,50 +533,28 @@ function App() {
                       setCategoryOpen((s) => !s);
                     }}
                   >
-                    Product Category <span className="chev">▾</span>
+                    Category ({categories.length ? categories.length : "All"}) <span className="chev">▾</span>
                   </button>
                   {categoryOpen && (
                     <div className="simple-pop">
                       <button
                         onClick={() => {
-                          setCategoryText("");
+                          setCategories([]);
                           setPage(1);
-                          setCategoryOpen(false);
                         }}
-                        className="pop-item"
+                        className={`pop-item ${categories.length === 0 ? "active" : ""}`}
                       >
                         All
                       </button>
-                      <button
-                        onClick={() => {
-                          setCategoryText("Clothing");
-                          setPage(1);
-                          setCategoryOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        Clothing
-                      </button>
-                      <button
-                        onClick={() => {
-                          setCategoryText("Electronics");
-                          setPage(1);
-                          setCategoryOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        Electronics
-                      </button>
-                      <button
-                        onClick={() => {
-                          setCategoryText("Home");
-                          setPage(1);
-                          setCategoryOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        Home
-                      </button>
+                      {["Clothing", "Electronics", "Home"].map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => handleMultiSelect(c, categories, setCategories)}
+                          className={`pop-item ${isSelected(c, categories) ? "active" : ""}`}
+                        >
+                          {isSelected(c, categories) ? "✓ " : ""}{c}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -606,7 +568,7 @@ function App() {
                       setTagsOpen((s) => !s);
                     }}
                   >
-                    Tags <span className="chev">▾</span>
+                    Tags ({tags.length ? tags.length : "All"}) <span className="chev">▾</span>
                   </button>
                   {tagsOpen && (
                     <div className="simple-pop">
@@ -614,32 +576,20 @@ function App() {
                         onClick={() => {
                           setTags([]);
                           setPage(1);
-                          setTagsOpen(false);
                         }}
-                        className="pop-item"
+                        className={`pop-item ${tags.length === 0 ? "active" : ""}`}
                       >
                         All
                       </button>
-                      <button
-                        onClick={() => {
-                          setTags(["new"]);
-                          setTagsOpen(false);
-                          setPage(1);
-                        }}
-                        className="pop-item"
-                      >
-                        new
-                      </button>
-                      <button
-                        onClick={() => {
-                          setTags(["promo"]);
-                          setTagsOpen(false);
-                          setPage(1);
-                        }}
-                        className="pop-item"
-                      >
-                        promo
-                      </button>
+                      {["new", "promo", "popular", "clearance", "seasonal"].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => handleMultiSelect(t, tags, setTags)}
+                          className={`pop-item ${isSelected(t, tags) ? "active" : ""}`}
+                        >
+                          {isSelected(t, tags) ? "✓ " : ""}{t}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -653,7 +603,7 @@ function App() {
                       setPaymentOpen((s) => !s);
                     }}
                   >
-                    Payment Method <span className="chev">▾</span>
+                    Payment ({paymentMethods.length ? paymentMethods.length : "All"}) <span className="chev">▾</span>
                   </button>
                   {paymentOpen && (
                     <div className="simple-pop">
@@ -661,39 +611,20 @@ function App() {
                         onClick={() => {
                           setPaymentMethods([]);
                           setPage(1);
-                          setPaymentOpen(false);
                         }}
-                        className="pop-item"
+                        className={`pop-item ${paymentMethods.length === 0 ? "active" : ""}`}
                       >
                         All
                       </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("Card", setPaymentMethods);
-                          setPaymentOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        Card
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("Cash", setPaymentMethods);
-                          setPaymentOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        Cash
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleSingleSelect("UPI", setPaymentMethods);
-                          setPaymentOpen(false);
-                        }}
-                        className="pop-item"
-                      >
-                        UPI
-                      </button>
+                      {["Card", "Cash", "UPI"].map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => handleMultiSelect(p, paymentMethods, setPaymentMethods)}
+                          className={`pop-item ${isSelected(p, paymentMethods) ? "active" : ""}`}
+                        >
+                          {isSelected(p, paymentMethods) ? "✓ " : ""}{p}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -748,14 +679,7 @@ function App() {
             </div>
 
             <div className="controls-right">
-              <input
-                className="search-pill"
-                type="text"
-                placeholder="Name, Phone no."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-              />
+              {/* Search moved to top header */}
               <select
                 className="sort-pill"
                 value={sortValue}
@@ -816,9 +740,8 @@ function App() {
                 <p className="table-meta">
                   {loading
                     ? "Loading..."
-                    : `Page ${meta.currentPage || 1} of ${
-                        meta.totalPages || 1
-                      } • ${meta.totalItems || 0} records`}
+                    : `Page ${meta.currentPage || 1} of ${meta.totalPages || 1
+                    } • ${meta.totalItems || 0} records`}
                 </p>
               </div>
 
