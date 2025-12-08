@@ -24,6 +24,7 @@ ALLOWED_ORIGINS = [
     "*", # Temporarily allow all for debugging failed fetch
     # Production URL (no trailing slash)
     "https://retail-sales-management-system-tru-estate-7oaaksdkb.vercel.app",
+    "https://retail-sales-management-system-tru-eight.vercel.app",
 ]
 
 app.add_middleware(
