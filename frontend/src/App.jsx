@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import "./App.css";
 
 // Base URL for backend API (Render in production, localhost in dev)
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://retail-sales-management-system-truestate-byfe.onrender.com";
 
 function App() {
   // Data + paging
