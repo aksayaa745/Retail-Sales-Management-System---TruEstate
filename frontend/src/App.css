@@ -573,14 +573,85 @@ body {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
+
+  /* Title Row stacks vertically */
+  .title-row {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px;
+  }
+
   .search-pill {
+    width: 100%;
+    min-width: auto;
+  }
+
+  /* Controls Panel stacks */
+  .controls-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  /* Filters scroll horizontally */
+  .controls-left {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    /* Hide scrollbar for cleaner look */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .controls-left::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Sort dropdown takes full width */
+  .controls-right {
+    width: 100%;
+  }
+
+  .sort-pill {
+    width: 100%;
+    display: block;
+  }
+
+  /* KPI Cards: 2 per row */
+  .kpi-row {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .kpi-card {
+    flex: 1 1 calc(50% - 8px);
     min-width: 140px;
   }
 
-  .controls-panel {
-    padding: 8px;
-    gap: 8px;
+  /* Reduce font sizes slightly */
+  .table-header-row h2 {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  /* KPI Cards: 1 per row on very small screens? or keep 2 small ones */
+  .kpi-card {
+    flex: 1 1 100%;
+  }
+
+  /* Adjust table padding */
+  .content-area {
+    padding: 4px 8px;
+  }
+
+  .table-header-row {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
   }
 }
 
@@ -598,6 +669,20 @@ body {
 .controls-right .sort-pop {
   position: relative;
   z-index: 2000;
+  background-color: #ffffff;
+  /* FORCE WHITE BACKGROUND */
+  color: #111827;
+  /* FORCE DARK TEXT */
+}
+
+/* Force colors on buttons to prevent invisibility on some themes */
+.pill-btn {
+  color: #111827 !important;
+  background-color: #f7fafc !important;
+}
+
+.pop-item {
+  color: #111827 !important;
 }
 
 .sort-popover {
